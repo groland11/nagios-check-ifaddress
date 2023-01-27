@@ -10,7 +10,7 @@ Nagios check for IP addresses on local network interfaces
 - Specifically exclude IP addresses to detect split brain situations in clusters
 
 ## Requirements
-- Red Hat Enterprise Linux 7/8/9
+- Red Hat Enterprise Linux 7/8/9 or similar; probably works on most Linux distributions
 - Python >= 3.6
 
 ## Usage
