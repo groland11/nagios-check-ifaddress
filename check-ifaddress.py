@@ -103,7 +103,7 @@ def get_logger(args: argparse.Namespace) -> logging.Logger:
 def main():
     status = ""
     result = Result.OK
-    result_error = Result.CRITICAL
+    result_error = Result.UNKNOWN
 
     # Logging settings
     args = get_args()
@@ -140,10 +140,13 @@ def main():
             negate = True
 
         # Warning or critical?
-        if args.warninglist and interface in args.warninglist:
-            result_error = Result.WARNING
-        elif args.criticallist and interface in args.criticallist:
-            result_error = Result.CRITICAL
+        if result_error != Result.CRITICAL:
+            if args.warninglist and interface in args.warninglist:
+                result_error = Result.WARNING
+            elif args.criticallist and interface in args.criticallist:
+                result_error = Result.CRITICAL
+            else:
+                result_error = Result.CRITICAL
 
         # Run 'ip -o address show <interface>'
         try:

@@ -8,6 +8,7 @@ Nagios check for IP addresses on local network interfaces
 - Include and / or exclude IP addresses for local network interfaces
 - Especially usefull if you want to check floating / virtual IP addresses in a cluster / high availability environment
 - Specifically exclude IP addresses to detect split brain situations in clusters
+- Critical or warning result code for specific interfaces
 
 ## Requirements
 - Red Hat Enterprise Linux 7/8/9 or similar; probably works on most Linux distributions
