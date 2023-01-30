@@ -7,8 +7,8 @@
 Nagios check for IP addresses on local network interfaces
 - Include and / or exclude IP addresses for local network interfaces
 - Especially usefull if you want to check floating / virtual IP addresses in a cluster / high availability environment
-- Specifically exclude IP addresses to detect split brain situations in clusters
-- Critical or warning result code for specific interfaces
+- Exclude certain IP addresses to detect split brain situations in clusters
+- Chose between critical or warning check result for specific interfaces
 
 ## Requirements
 - Red Hat Enterprise Linux 7/8/9 or similar; probably works on most Linux distributions
@@ -35,8 +35,8 @@ Options:
 ```
 
 ## Example
-Network interface enp1s0 must have IP address 192.168.122.102 assigned, but not 192.168.122.100.
-If 192.168.122.100 is a virtual IP address in a network cluster, and the check fails, you know that this node is in a failover state.
+IP address 192.168.122.102 assigned must be assigned to network interface enp1s0, but not 192.168.122.100.
+If 192.168.122.100 is a virtual IP address in a network cluster, and the check fails on one of the nodes, you know that this node is in a failover state.
 ```
 # ./check-ifaddress.py -a enp1s0/192.168.122.102 enp1s0/-192.168.122.100 
 OK - enp1s0/192.168.122.102;enp1s0/-192.168.122.100;
