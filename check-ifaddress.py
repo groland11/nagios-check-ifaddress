@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+""" Nagios check for IP address on local network interface
+
+Requirements
+    Python >= 3.6
+    Packages: -
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <http://www.gnu.org/licenses/>.
+"""
 import argparse
 import logging
 import re
@@ -6,6 +23,16 @@ import sys
 
 from enum import Enum
 from subprocess import run, TimeoutExpired, PIPE
+
+
+__license__ = "GPLv3"
+__version__ = "0.1"
+
+
+# Check for minimum Python version
+if not sys.version_info >= (3, 6):
+    print("ERROR: Requires Python 3.6 or higher")
+    exit(1)
 
 
 # Nagios return codes: https://nagios-plugins.org/doc/guidelines.html#AEN78
