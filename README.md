@@ -35,7 +35,7 @@ Options:
 ```
 
 ## Example
-IP address 192.168.122.102 assigned must be assigned to network interface enp1s0, but not 192.168.122.100.
+IP address 192.168.122.102 must be assigned to network interface enp1s0, but not 192.168.122.100.
 If 192.168.122.100 is a virtual IP address in a network cluster, and the check fails on one of the nodes, you know that this node is in a failover state.
 ```
 # ./check-ifaddress.py -a enp1s0/192.168.122.102 enp1s0/-192.168.122.100 
