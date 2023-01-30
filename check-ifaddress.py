@@ -4,13 +4,20 @@ import logging
 import re
 import sys
 
+from enum import Enum
 from subprocess import run, TimeoutExpired, PIPE
 
+
 # Nagios return codes: https://nagios-plugins.org/doc/guidelines.html#AEN78
-OK = 0
-WARNING = 1
-CRITICAL = 2
-UNKNOWN = 3
+class Result(Enum):
+    OK = 0
+    WARNING = 1
+    CRITICAL = 2
+    UNKNOWN = 3
+
+    @classmethod
+    def has_value(this, value):
+        return value in [member.value for member in Result]
 
 
 def get_args():
@@ -21,7 +28,8 @@ def get_args():
     parser._optionals.title = "Options"
     parser.add_argument(
         '-a', '--address', nargs='+', required=True,
-        help='network interface name and IP address, e.g. "enp1s0/192.168.0.10"',
+        help='network interface name and IP address, e.g. "enp1s0/192.168.0.10";'\
+             'negate IP address by prepending a hyphen, e.g. "enp1s0/-192.168.0.11"',
         dest='ifaddresses', type=str)
     parser.add_argument(
         '-w', '--warning', nargs='?', required=False,
@@ -29,7 +37,7 @@ def get_args():
         dest='warninglist', type=str)
     parser.add_argument(
         '-c', '--critical', nargs='?', required=False,
-        help='list of network interfaces which always generate critical errors, e.g. "enp3s0,enp4s0"',
+        help='list of network interfaces which always generate critical errors, e.g. "enp3s0,enp4s0" (default)',
         dest='criticallist', type=str)
     parser.add_argument(
         '-v', '--verbose', required=False,
@@ -67,7 +75,7 @@ def get_logger(args: argparse.Namespace) -> logging.Logger:
 
 def main():
     status = ""
-    result = OK
+    result = Result.OK
 
     # Logging settings
     args = get_args()
@@ -75,7 +83,7 @@ def main():
 
     # Checking command line arguments
     if False:
-        sys.exit(UNKNOWN)
+        sys.exit(Result.UNKNOWN)
 
     # Run check command for each network interface
     mylogger.debug(args.ifaddresses)
@@ -84,18 +92,18 @@ def main():
             interface, address = ifaddress.split("/")
         except ValueError:
             mylogger.error(f"Invalid interface address '{ifaddress}'")
-            sys.exit(UNKNOWN)
+            sys.exit(Result.UNKNOWN)
 
         # Validity check for input parameters
         if interface == "" or address == "":
             mylogger.error(f"Invalid interface address '{ifaddress}'")
-            sys.exit(UNKNOWN)
+            sys.exit(Result.UNKNOWN)
         if not re.match(r"^[a-z0-9]+$", interface):
             mylogger.error(f"Invalid interface '{interface}'")
-            sys.exit(UNKNOWN)
+            sys.exit(Result.UNKNOWN)
         if not re.match(r"^-?[a-f0-9.:]+$", address):
             mylogger.error(f"Invalid address '{address}'")
-            sys.exit(UNKNOWN)
+            sys.exit(Result.UNKNOWN)
 
         # Negate address by prepending "-"
         negate = False
@@ -110,10 +118,10 @@ def main():
             process = run(cmd_df, check=True, timeout=10, stdout=PIPE)
         except (OSError, TimeoutExpired, ValueError) as e:
             mylogger.warning(f'{e}')
-            sys.exit(UNKNOWN)
+            sys.exit(Result.UNKNOWN)
         except Exception as e:
             mylogger.warning(f'Unexpected exception: {e}')
-            sys.exit(UNKNOWN)
+            sys.exit(Result.UNKNOWN)
 
         # Parse output
         found = False
@@ -129,25 +137,19 @@ def main():
         if not found:
             if not negate:
                 status += f"{address} missing for {interface};"
-                result = CRITICAL
+                result = Result.CRITICAL
             else:
                 status += f"{interface}/-{address};"
         else:
             if negate:
-                status += f"{address} configured for {interface};"
-                result = CRITICAL
+                status += f"{address} misconfigured for {interface};"
+                result = Result.CRITICAL
             else:
-                status += f"{interface}/{address};"
+                status += f"{interface}/{address} ok;"
 
-    # Print status message in Nagios format
-    if result == OK:
-        print(f"OK - {status}")
-    elif result == WARNING:
-        print(f"WARNING - {status}")
-    elif result == CRITICAL:
-        print(f"CRITICAL - {status}")
-
-    sys.exit(result)
+    # Exit with Nagios result
+    print(f"{result.name} - {status}")
+    sys.exit(result.value)
 
 if __name__ == "__main__":
     main()
