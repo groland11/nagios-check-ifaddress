@@ -103,14 +103,15 @@ def get_logger(args: argparse.Namespace) -> logging.Logger:
 def main():
     status = ""
     result = Result.OK
+    result_error = Result.CRITICAL
 
     # Logging settings
     args = get_args()
     mylogger = get_logger(args)
 
-    # Checking command line arguments
-    if False:
-        sys.exit(Result.UNKNOWN)
+    # Check command line arguments
+    mylogger.debug(f"Warning for interfaces: {args.warninglist}")
+    mylogger.debug(f"Critical for interfaces: {args.criticallist}")
 
     # Run check command for each network interface
     mylogger.debug(args.ifaddresses)
@@ -138,7 +139,13 @@ def main():
             address = address[1:]
             negate = True
 
-        # Run -o 'ip address show <interface>'
+        # Warning or critical?
+        if args.warninglist and interface in args.warninglist:
+            result_error = Result.WARNING
+        elif args.criticallist and interface in args.criticallist:
+            result_error = Result.CRITICAL
+
+        # Run 'ip -o address show <interface>'
         try:
             cmd_df = ["ip", "-o", "address", "show", interface]
             mylogger.debug(f'Running OS command line: {cmd_df}')
@@ -164,13 +171,13 @@ def main():
         if not found:
             if not negate:
                 status += f"{address} missing for {interface};"
-                result = Result.CRITICAL
+                result = result_error
             else:
                 status += f"{interface}/-{address};"
         else:
             if negate:
                 status += f"{address} misconfigured for {interface};"
-                result = Result.CRITICAL
+                result = result_error
             else:
                 status += f"{interface}/{address} ok;"
 
