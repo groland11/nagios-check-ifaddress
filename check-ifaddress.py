@@ -35,6 +35,10 @@ if not sys.version_info >= (3, 6):
     exit(1)
 
 
+# Global logging object
+logger = logging.getLogger(__name__)
+
+
 # Nagios return codes: https://nagios-plugins.org/doc/guidelines.html#AEN78
 class Result(Enum):
     OK = 0
@@ -46,6 +50,15 @@ class Result(Enum):
     def has_value(this, value):
         return value in [member.value for member in Result]
 
+class LogFilterWarning(logging.Filter):
+    """Logging filter = INFO, WARNING"""
+    def filter(self, record):
+        return record.levelno in {logging.INFO, logging.WARNING}
+
+class LogFilterDebug(logging.Filter):
+    """Logging filter = DEBUG"""
+    def filter(self, record):
+        return record.levelno in {logging.DEBUG}
 
 def get_args():
     '''
@@ -71,8 +84,8 @@ def get_args():
         help='enable verbose output', dest='verbose',
         action='store_true')
     parser.add_argument(
-        '--log-file', nargs=1, required=False,
-        help='file to log to, default: <stdout>',
+        '--logfile', nargs=1, required=False,
+        help='log verbose output into logfile, default: <stdout>',
         dest='logfile', type=str)
 
     args = parser.parse_args()
@@ -89,16 +102,42 @@ def get_logger(args: argparse.Namespace) -> logging.Logger:
     else:
         loglevel = logging.INFO
 
-    log_file = None
+    logger.setLevel(loglevel)
+
+    # Log everything >= INFO to stdout
+    h1 = logging.StreamHandler(sys.stdout)
+    h1.setLevel(logging.INFO)
+    h1.setFormatter(logging.Formatter(fmt='%(asctime)s [%(process)d] %(levelname)s: %(message)s',
+                                      datefmt='%Y-%m-%d %H:%M:%S'))
+    h1.addFilter(LogFilterWarning())
+
+    # Log errors to stderr
+    h2 = logging.StreamHandler(sys.stderr)
+    h2.setFormatter(logging.Formatter(fmt='%(asctime)s [%(process)d] %(levelname)s: %(message)s',
+                                      datefmt='%Y-%m-%d %H:%M:%S'))
+    h2.setLevel(logging.ERROR)
+
+    # Log everything = DEBUG to logfile or stdout
     if args.logfile:
-        log_file = args.logfile[0]
+        logfile = args.logfile[0]
+        try:
+            h3 = logging.FileHandler(logfile, encoding="utf-8")
+        except FileNotFoundError as e:
+            logger.error(f"Invalid logfile ({e})")
+    else:
+        h3 = logging.StreamHandler(sys.stdout)
 
-    logging.basicConfig(filename=log_file,
-                        format='%(levelname)s - %(message)s',
-                        level=loglevel)
+    h3.setLevel(logging.DEBUG)
+    h3.setFormatter(logging.Formatter(fmt='%(asctime)s [%(process)d] %(levelname)s: %(message)s',
+                                      datefmt='%Y-%m-%d %H:%M:%S'))
+    h3.addFilter(LogFilterDebug())
 
-    return logging.getLogger(__name__)
+    # Add all 3 handlers (stdout, stderr, debug)
+    logger.addHandler(h1)
+    logger.addHandler(h2)
+    logger.addHandler(h3)
 
+    return logger
 
 def main():
     status = ""
@@ -120,18 +159,18 @@ def main():
             interface, address = ifaddress.split("/")
         except ValueError:
             mylogger.error(f"Invalid interface address '{ifaddress}'")
-            sys.exit(Result.UNKNOWN)
+            sys.exit(Result.UNKNOWN.value)
 
         # Validity check for input parameters
         if interface == "" or address == "":
             mylogger.error(f"Invalid interface address '{ifaddress}'")
-            sys.exit(Result.UNKNOWN)
+            sys.exit(Result.UNKNOWN.value)
         if not re.match(r"^[a-z0-9]+$", interface):
             mylogger.error(f"Invalid interface '{interface}'")
-            sys.exit(Result.UNKNOWN)
+            sys.exit(Result.UNKNOWN.value)
         if not re.match(r"^-?[a-f0-9.:]+$", address):
             mylogger.error(f"Invalid address '{address}'")
-            sys.exit(Result.UNKNOWN)
+            sys.exit(Result.UNKNOWN.value)
 
         # Negate address by prepending "-"
         negate = False
@@ -154,11 +193,11 @@ def main():
             mylogger.debug(f'Running OS command line: {cmd_df}')
             process = run(cmd_df, check=True, timeout=10, stdout=PIPE)
         except (OSError, TimeoutExpired, ValueError) as e:
-            mylogger.warning(f'{e}')
-            sys.exit(Result.UNKNOWN)
+            mylogger.debug(f'{e}')
+            sys.exit(Result.UNKNOWN.value)
         except Exception as e:
-            mylogger.warning(f'Unexpected exception: {e}')
-            sys.exit(Result.UNKNOWN)
+            mylogger.debug(f'Unexpected exception: {e}')
+            sys.exit(Result.UNKNOWN.value)
 
         # Parse output
         found = False
@@ -184,8 +223,10 @@ def main():
             else:
                 status += f"{interface}/{address} ok;"
 
-    # Exit with Nagios result
-    print(f"{result.name} - {status}")
+    # Print status and exit with Nagios result
+    msg = f"{result.name} - {status}"
+    print(msg)
+    mylogger.debug(msg)
     sys.exit(result.value)
 
 if __name__ == "__main__":
