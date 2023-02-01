@@ -9,6 +9,7 @@ Nagios check for IP addresses on local network interfaces
 - Especially usefull if you want to check floating / virtual IP addresses in a cluster / high availability environment
 - Exclude certain IP addresses to detect split brain situations in clusters
 - Chose between critical or warning check result for specific interfaces
+- Log only verbose/debug ouitput to logfile. Regular Nagios output message will still be printed to stdout. This way you can enable verbose output, while the Nagios check keeps running.
 
 ## Requirements
 - Red Hat Enterprise Linux 7/8/9 or similar; probably works on most Linux distributions
@@ -17,7 +18,7 @@ Nagios check for IP addresses on local network interfaces
 ## Usage
 ```
 ./check-ifaddress.py -h
-usage: check-ifaddress.py [-h] -a IFADDRESSES [IFADDRESSES ...] [-w [WARNINGLIST]] [-c [CRITICALLIST]] [-v] [--log-file LOGFILE]
+usage: check-ifaddress.py [-h] -a IFADDRESSES [IFADDRESSES ...] [-w WARNINGLIST] [-c CRITICALLIST] [-v] [--logfile LOGFILE]
 
 Check network interface IP addresses
 
@@ -30,7 +31,7 @@ Options:
   -c [CRITICALLIST], --critical [CRITICALLIST]
                         list of network interfaces which always generate critical errors, e.g. "enp3s0,enp4s0"
   -v, --verbose         enable verbose output
-  --log-file LOGFILE    file to log to, default: <stdout>
+  --logfile LOGFILE     log verbose output do logfile, default: <stdout>
 
 ```
 
