@@ -59,11 +59,11 @@ def get_args():
              'negate IP address by prepending a hyphen, e.g. "enp1s0/-192.168.0.11"',
         dest='ifaddresses', type=str)
     parser.add_argument(
-        '-w', '--warning', nargs='?', required=False,
+        '-w', '--warning', required=False,
         help='list of network interface which only generate warnings, e.g. "enp2s0,enp7s0"',
         dest='warninglist', type=str)
     parser.add_argument(
-        '-c', '--critical', nargs='?', required=False,
+        '-c', '--critical', required=False,
         help='list of network interfaces which always generate critical errors, e.g. "enp3s0,enp4s0" (default)',
         dest='criticallist', type=str)
     parser.add_argument(
